@@ -1,4 +1,4 @@
 # sleep-apnoea
 
-Project on Detectiong Sleep apnoea
+Project on Detecting Sleep apnoea
 
