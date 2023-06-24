@@ -1,14 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[35]:
-
-
 #pip install -U threadpoolctl
-
-
-# In[27]:
-
 
 import pandas as pd
 import os
@@ -40,10 +30,6 @@ import time
 import argparse
 import logging
 
-
-# In[ ]:
-
-
 logging.basicConfig(filename="logGFFGD",
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -55,9 +41,6 @@ logging.info("Running Getting files from Google Drive.py")
 logger = logging.getLogger('GFFGD')
 
 
-# In[23]:
-
-
 scope = ['https://www.googleapis.com/auth/drive']
 service_account_json_key = 'my_key.json'
 credentials = service_account.Credentials.from_service_account_file(
@@ -67,13 +50,7 @@ service = build('drive', 'v3', credentials=credentials)
 logger.info('Connected to Google Drive')
 
 
-# In[24]:
-
-
 df = pd.DataFrame()
-
-
-# In[26]:
 
 
 page_token = None
@@ -122,9 +99,6 @@ while(i < len(items)):
     i += 1
     
 logger.info('Loaded dataset from Google Drive')
-
-
-# In[15]:
 
 
 df.to_csv("combined_data.csv")
