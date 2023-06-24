@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[2]:
-
-
 import pandas as pd
 import os
 import numpy as np
@@ -35,9 +29,6 @@ import argparse
 import logging
 
 
-# In[3]:
-
-
 logging.basicConfig(filename="logANN_ADASYN",
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -47,10 +38,6 @@ logging.basicConfig(filename="logANN_ADASYN",
 logging.info("Running ANN_ADASYN.py")
 
 logger = logging.getLogger('ANN_ADASYN')
-
-
-# In[ ]:
-
 
 """scope = ['https://www.googleapis.com/auth/drive']
 service_account_json_key = 'my_key.json'
@@ -113,14 +100,8 @@ logger.info('Loaded dataset from Google Drive')
 """
 
 
-# In[4]:
-
-
 df = pd.read_csv("combined_data.csv", index_col=0)
 logger.info('Loaded dataset')
-
-
-# In[ ]:
 
 
 y = df['Type']
@@ -129,28 +110,15 @@ X = df.loc[:, df.columns != "Type"]
 #print(X)
 
 
-# In[ ]:
-
-
 su = ADASYN(random_state=42)
 X_su, y_su = su.fit_resample(X, y)
 logger.info('Dataset is balanced')
 
 
-# In[ ]:
-
-
 X_su = X_su.to_numpy()
 y_su = y_su.to_numpy()
 
-
-# In[ ]:
-
-
 #X_train, X_test, y_train, y_test = train_test_split(X_su, y_su, test_size = 0.25, random_state=0)
-
-
-# In[ ]:
 
 
 model = keras.Sequential()
@@ -169,9 +137,6 @@ model.add(layers.Dense(3, activation='softmax'))
 #model.summary()
 
 
-# In[ ]:
-
-
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath= 'modelANN_ADASYN.{epoch:02d}-{accuracy:.4f}-{val_accuracy:.4f}.h5',
     save_weights_only=True,
@@ -180,14 +145,8 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     save_best_only=True)
 
 
-# In[ ]:
-
-
 model.compile(optimizer =tf.keras.optimizers.Adam(learning_rate=0.001), loss="categorical_crossentropy", metrics="accuracy")
 logger.info('Model is compiled')
-
-
-# In[ ]:
 
 
 y_train_new = np.zeros((y_su.shape[0],3))
@@ -195,14 +154,8 @@ for i in range(y_su.shape[0]):
     y_train_new[i][y_su[i]] = 1
 
 
-# In[ ]:
-
-
 history = model.fit(X_su,y_train_new,epochs=5,validation_split=0.05,verbose=0, callbacks = [model_checkpoint_callback])
 logger.info('Model is trained')
-
-
-# In[ ]:
 
 
 plt.plot(history.history['accuracy'])
@@ -214,9 +167,6 @@ plt.legend(['train', 'val'], loc='upper left')
 plt.show()
 
 
-# In[ ]:
-
-
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.title('model loss')
@@ -226,16 +176,10 @@ plt.legend(['train', 'val'], loc='upper left')
 plt.show()
 
 
-# In[ ]:
-
-
 y_pred = model.predict(X_su)
 y_pred_new = np.zeros(y_pred.shape[0])
 for i in range(y_pred.shape[0]):
     y_pred_new[i] = np.argmax(y_pred[i])
-
-
-# In[ ]:
 
 
 matrix = confusion_matrix(y_su, y_pred_new)
@@ -250,4 +194,3 @@ plt.xlabel('Predictions', fontsize=18)
 plt.ylabel('Actuals', fontsize=18)
 plt.title('Confusion Matrix', fontsize=18)
 plt.show()
-
