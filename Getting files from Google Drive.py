@@ -1,14 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[35]:
-
-
 #pip install -U threadpoolctl
-
-
-# In[27]:
-
 
 import pandas as pd
 import os
@@ -36,10 +26,6 @@ from googleapiclient.http import MediaFileUpload
 import io
 from imblearn.under_sampling import RandomUnderSampler
 
-
-# In[23]:
-
-
 scope = ['https://www.googleapis.com/auth/drive']
 service_account_json_key = 'my_key.json'
 credentials = service_account.Credentials.from_service_account_file(
@@ -47,15 +33,7 @@ credentials = service_account.Credentials.from_service_account_file(
                               scopes=scope)
 service = build('drive', 'v3', credentials=credentials)
 
-
-# In[24]:
-
-
 df = pd.DataFrame()
-
-
-# In[26]:
-
 
 page_token = None
 items=[]
@@ -103,8 +81,4 @@ while(i < len(items)):
     i += 1
 
 
-# In[15]:
-
-
 df.to_csv("combined_data.csv")
-
