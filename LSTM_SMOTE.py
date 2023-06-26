@@ -29,15 +29,15 @@ import argparse
 import logging
 
 
-logging.basicConfig(filename="logLSTM",
+logging.basicConfig(filename="logLSTM_SMOTE",
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.INFO)
 
-logging.info("Running LSTM.py")
+logging.info("Running LSTM_SMOTE.py")
 
-logger = logging.getLogger('LSTM')
+logger = logging.getLogger('LSTM_SMOTE')
 
 """scope = ['https://www.googleapis.com/auth/drive']
 service_account_json_key = 'my_key.json'
@@ -137,9 +137,9 @@ model.add(layers.Dense(3, kernel_initializer='normal',activation='softmax'))
 
 
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath= 'modelLSTM.{epoch:02d}-{accuracy:.4f}-{val_accuracy:.4f}.h5',
+    filepath= 'modelLSTM_SMOTE.{epoch:02d}-{accuracy:.4f}-{val_accuracy:.4f}.h5',
     save_weights_only=True,
-    monitor='accuracy',
+    monitor='val_accuracy',
     mode='max',
     save_best_only=True)
 
@@ -157,14 +157,18 @@ history = model.fit(X_su,y_train_new,epochs=5,validation_split=0.05,verbose=0, c
 logger.info('Model is trained')
 
 
+filepath = "modelLSTM_SMOTE-" + "val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
+
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
 plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
-plt.show()
+plt.savefig(filepath)
 
+
+filepath = "modelLSTM_SMOTE-" + "val_loss-" + str(max(history.history['val_loss'])) + ".png"
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
@@ -172,7 +176,28 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
-plt.show()
+plt.savefig(filepath)
+
+def inttostring(x):
+    if(x < 10):
+        return "0" + str(x)
+    else:
+        return str(x)
+    
+    
+def floattostring(x):
+    s = str(x)
+    if(len(s) > 6):
+        s = s[:6]
+    elif len(s) < 6:
+        while(len(s) < 6):
+            s += "0"
+    return(s)
+
+
+filepath = "modelLSTM_SMOTE." + inttostring(history.history['val_accuracy'].index(max(history.history['va_accuracy'])) + 1) + "-"
+filepath = filepath + floattostring(max(history.history['accuracy'])) + "-" + floattostring(max(history.history['val_accuracy'])) + ".h5"
+model.load_weights(filepath)
 
 
 y_pred = model.predict(X_su)
@@ -180,6 +205,8 @@ y_pred_new = np.zeros(y_pred.shape[0])
 for i in range(y_pred.shape[0]):
     y_pred_new[i] = np.argmax(y_pred[i])
 
+
+filepath = "modelLSTM_SMOTE_confusion_matrix" + "val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
 
 matrix = confusion_matrix(y_su, y_pred_new)
 
@@ -192,4 +219,4 @@ for i in range(matrix.shape[0]):
 plt.xlabel('Predictions', fontsize=18)
 plt.ylabel('Actuals', fontsize=18)
 plt.title('Confusion Matrix', fontsize=18)
-plt.show()
+plt.savefig(filepath)
