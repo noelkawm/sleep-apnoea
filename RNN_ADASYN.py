@@ -198,7 +198,7 @@ def floattostring(x):
     return(s)
 
 
-filepath = "modelRNN_ADASYN." + inttostring(history.history['val_accuracy'].index(max(history.history['va_accuracy'])) + 1) + "-"
+filepath = "modelRNN_ADASYN." + inttostring(history.history['val_accuracy'].index(max(history.history['val_accuracy'])) + 1) + "-"
 filepath = filepath + floattostring(max(history.history['accuracy'])) + "-" + floattostring(max(history.history['val_accuracy'])) + ".h5"
 model.load_weights(filepath)
 
