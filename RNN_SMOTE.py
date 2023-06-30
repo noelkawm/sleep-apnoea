@@ -28,6 +28,11 @@ import time
 import argparse
 import logging
 
+def driveUpload(filepath):
+  body = {'name': 'README', 'mimeType': 'application/octet-stream', 'parents': ['1qLxroprD2jwb1ag6vUwYsdCM2imWH3Cx']}
+  media = MediaFileUpload('README.md', mimetype = 'text/html')
+  fiahl = service.files().create(body=body, media_body=media).execute()
+  logging.info("Created file '%s' id '%s'." % (fiahl.get('name'), fiahl.get('id')))
 
 logging.basicConfig(filename="logRNN_SMOTE",
                     filemode='a',
@@ -168,7 +173,7 @@ plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig(filepath)
-
+driveUpload(filepath)
 
 filepath = "modelRNN_SMOTE-" + "val_loss-" + str(max(history.history['val_loss'])) + ".png"
 
@@ -179,6 +184,7 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig(filepath)
+driveUpload(filepath)
 
 def inttostring(x):
     if(x < 10):
@@ -200,7 +206,7 @@ def floattostring(x):
 filepath = "modelRNN_SMOTE." + inttostring(history.history['val_accuracy'].index(max(history.history['val_accuracy'])) + 1) + "-"
 filepath = filepath + floattostring(max(history.history['accuracy'])) + "-" + floattostring(max(history.history['val_accuracy'])) + ".h5"
 model.load_weights(filepath)
-
+driveUpload(filepath)
 
 y_pred = model.predict(X_su)
 y_pred_new = np.zeros(y_pred.shape[0])
@@ -222,3 +228,4 @@ plt.xlabel('Predictions', fontsize=18)
 plt.ylabel('Actuals', fontsize=18)
 plt.title('Confusion Matrix', fontsize=18)
 plt.savefig(filepath)
+driveUpload(filepath)
