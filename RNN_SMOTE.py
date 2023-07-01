@@ -28,7 +28,7 @@ import time
 import argparse
 import logging
 
-def driveUpload(filepath):
+def driveUpload(service, filepath):
     body = {'name': 'README', 'mimeType': 'application/octet-stream', 'parents': ['1qLxroprD2jwb1ag6vUwYsdCM2imWH3Cx']}
     media = MediaFileUpload('README.md', mimetype = 'text/html')
     fiahl = service.files().create(body=body, media_body=media).execute()
@@ -41,6 +41,15 @@ logging.basicConfig(filename="logRNN_SMOTE",
                     level=logging.INFO)
 
 logging.info("Running RNN_SMOTE.py")
+
+
+scope = ['https://www.googleapis.com/auth/drive']
+service_account_json_key = 'my_key.json'
+credentials = service_account.Credentials.from_service_account_file(
+                              filename=service_account_json_key, 
+                              scopes=scope)
+service = build('drive', 'v3', credentials=credentials)
+logging.info('Connected to Google Drive')
 
 logger = logging.getLogger('RNN_SMOTE')
 
@@ -173,7 +182,7 @@ plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig(filepath)
-driveUpload(filepath)
+driveUpload(service, filepath)
 
 filepath = "modelRNN_SMOTE-" + "val_loss-" + str(max(history.history['val_loss'])) + ".png"
 
@@ -184,7 +193,7 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig(filepath)
-driveUpload(filepath)
+driveUpload(service, filepath)
 
 def inttostring(x):
     if(x < 10):
@@ -228,4 +237,4 @@ plt.xlabel('Predictions', fontsize=18)
 plt.ylabel('Actuals', fontsize=18)
 plt.title('Confusion Matrix', fontsize=18)
 plt.savefig(filepath)
-driveUpload(filepath)
+driveUpload(service, filepath)
