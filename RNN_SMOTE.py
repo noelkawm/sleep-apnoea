@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from scipy.signal import resample
+#from scipy.signal import resample
 from imblearn.under_sampling import NearMiss
 from imblearn.over_sampling import BorderlineSMOTE
 from imblearn.over_sampling import ADASYN
