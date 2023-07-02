@@ -58,7 +58,7 @@ def createModel(epochs, batch_size, noRows):
     
     logger = logging.getLogger('RNN_SMOTE')
     
-    df = pd.read_csv("combined_data.csv", index_col=0,nrows=500)
+    df = pd.read_csv("combined_data.csv", index_col=0,nrows=noRows)
     logger.info('Loaded dataset')
     
     y = df['Type']
@@ -108,7 +108,7 @@ def createModel(epochs, batch_size, noRows):
     history = model.fit(X_su,y_train_new,epochs=epochs,batch_size = batch_size, validation_split=0.05, callbacks = [model_checkpoint_callback])
     logger.info('Model is trained')
     
-    filepath = "modelRNN_SMOTE-" + "val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
+    filepath = "modelRNN_SMOTE-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
     
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
@@ -119,7 +119,7 @@ def createModel(epochs, batch_size, noRows):
     plt.savefig(filepath)
     driveUpload(service, filepath)
     
-    filepath = "modelRNN_SMOTE-" + "val_loss-" + str(max(history.history['val_loss'])) + ".png"
+    filepath = "modelRNN_SMOTE-" + str(epochs) + "-" + str(batch_size) + "-val_loss-" + str(max(history.history['val_loss'])) + ".png"
     
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -157,7 +157,7 @@ def createModel(epochs, batch_size, noRows):
         y_pred_new[i] = np.argmax(y_pred[i])
     
     
-    filepath = "modelRNN_SMOTE_confusion_matrix" + "val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
+    filepath = "modelRNN_SMOTE_confusion_matrix-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
     
     matrix = confusion_matrix(y_su, y_pred_new)
     
@@ -180,20 +180,23 @@ def main(argv):
     noRows = 500
     
     try:
-       opts, args = getopt.getopt(argv,"i:",["ifile="])
+       opts, args = getopt.getopt(argv,"e:, b:, n:",["ifile="])
     except getopt.GetoptError:
        print('RNN_SMOTE.py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500)')
        sys.exit(2)
     for opt, arg in opts:
        if opt == '-h':
-          print('RNN_SMOTE.py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500)')
+          print('RNN_SMOTE.py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500, None for all rows)')
           sys.exit()
        elif opt in ("-e"):
-          epochs = arg       
+          epochs = int(arg)       
        elif opt in ("-b"):
-          batch_size = arg       
+          batch_size = int(arg)       
        elif opt in ("-n"):
-          noRows = arg                 
+           if arg == 'None':
+               noRows = None
+           else:
+               noRows = int(arg)                 
     createModel(epochs, batch_size, noRows)
 
 if __name__ == '__main__':
