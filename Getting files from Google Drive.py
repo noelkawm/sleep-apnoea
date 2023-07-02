@@ -3,17 +3,6 @@
 import pandas as pd
 import os
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-from scipy.signal import resample
-from imblearn.under_sampling import NearMiss
-from imblearn.over_sampling import BorderlineSMOTE
-from imblearn.over_sampling import ADASYN
-import sklearn
-import seaborn as sns
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix, classification_report
 from pydrive2.auth import GoogleAuth
 from oauth2client.service_account import ServiceAccountCredentials
 from google.oauth2.credentials import Credentials
@@ -24,10 +13,10 @@ from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.http import MediaFileUpload
 import io
-from imblearn.under_sampling import RandomUnderSampler
-import matplotlib.pyplot as plt
-import time
-import argparse
+# from imblearn.under_sampling import RandomUnderSampler
+# import matplotlib.pyplot as plt
+# import time
+# import argparse
 import logging
 
 logging.basicConfig(filename="logGFFGD",
@@ -56,8 +45,17 @@ df = pd.DataFrame()
 page_token = None
 items=[]
 
+body = {'name': 'README', 'mimeType': 'application/octet-stream', 'parents': ['1qLxroprD2jwb1ag6vUwYsdCM2imWH3Cx']}
+
+media = MediaFileUpload('README.md', mimetype = 'text/html')
+#Now we're doing the actual post, creating a new file of the uploaded type
+fiahl = service.files().create(body=body, media_body=media).execute()
+
+#Because verbosity is nice
+print("Created file '%s' id '%s'." % (fiahl.get('name'), fiahl.get('id')))
+
 while True:
-    results = service.files().list(pageSize=1000, fields="nextPageToken, files(id, name)", q='name contains "csv"', pageToken=page_token).execute()
+    results = service.files().list(pageSize=1000, fields="nextPageToken, files(id, name)", q='name contains "readme"', pageToken=page_token).execute()
     # get the results
     items.extend(results.get('files', []))
     page_token = results.get("nextPageToken", None)
