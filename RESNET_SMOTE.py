@@ -30,6 +30,7 @@ import time
 import argparse
 import logging
 import socket
+from sklearn.model_selection import train_test_split
 
 # For plotting
 import matplotlib.pyplot as plt
@@ -271,7 +272,9 @@ def createModel(epochs, batch_size, noRows):
     
     X_su = X_su.reshape(X_su.shape[0],X_su.shape[1],1)
     
-    history = model.fit(X_su,y_train_new,epochs=epochs,batch_size = batch_size, validation_split=0.05, callbacks = callbacks)
+    x_train, x_test, y_train, y_test = train_test_split(X_su,y_train_new, test_size=0.20, shuffle= True)
+    
+    history = model.fit(x_train, y_train, validation_data=(x_test, y_test),epochs=epochs,batch_size = batch_size, callbacks = callbacks)
     logger.info('Model is trained')
     
     filepath = "modelRESNET_SMOTE-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
