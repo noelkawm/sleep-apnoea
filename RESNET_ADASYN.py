@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 import plotly
 import plotly.offline as py
 import plotly.tools as tls
-plotly.offline.init_notebook_mode()
+#plotly.offline.init_notebook_mode()
 # For building and training the neural network
 from keras.models import Model
 from keras.layers import (Input, Conv1D, MaxPooling1D, Dropout,
