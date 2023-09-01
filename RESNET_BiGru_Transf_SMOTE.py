@@ -48,10 +48,36 @@ from keras.callbacks import (ModelCheckpoint, TensorBoard, ReduceLROnPlateau)
 from IPython.display import SVG
 from keras.layers import Bidirectional, GRU
 from keras.layers import Reshape
-from keras.layers import Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras.layers import Layer, MultiHeadAttention
 
 timeout_in_sec = 60*60*10 # 10h timeout limit
 socket.setdefaulttimeout(timeout_in_sec)
+
+class CustomTransformerLayer(Layer):
+    def __init__(self, num_heads, d_model, dff, rate=0.1):
+        super(CustomTransformerLayer, self).__init__()
+
+        self.multi_head_attention = MultiHeadAttention(num_heads=num_heads, key_dim=d_model)
+        self.dropout1 = tf.keras.layers.Dropout(rate)
+        self.layer_norm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+        self.ffn = tf.keras.Sequential([
+            tf.keras.layers.Dense(dff, activation='relu'),
+            tf.keras.layers.Dense(d_model)
+        ])
+        self.dropout2 = tf.keras.layers.Dropout(rate)
+        self.layer_norm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+    def call(self, inputs, training):
+        attn_output = self.multi_head_attention(inputs, inputs)
+        attn_output = self.dropout1(attn_output, training=training)
+        out1 = self.layer_norm1(inputs + attn_output)
+
+        ffn_output = self.ffn(out1)
+        ffn_output = self.dropout2(ffn_output, training=training)
+        out2 = self.layer_norm2(out1 + ffn_output)
+
+        return out2
 
 def ResNet1D(input_dims, residual_blocks_dims, nclasses,
              dropout_rate=0.8, kernel_size=16, kernel_initializer='he_normal'):
@@ -173,13 +199,13 @@ def driveUpload(service, filepath):
 
 def createModel(epochs, batch_size, noRows):
 
-    logging.basicConfig(filename="logRESNET_Conv1D_BiGru_SMOTE",
+    logging.basicConfig(filename="logRESNET_BiGru_Transf_SMOTE ",
                         filemode='a',
                         format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                         datefmt='%H:%M:%S',
                         level=logging.INFO)
     
-    logging.info("Running RESNET_Conv1D_BiGru_SMOTE.py")
+    logging.info("Running RESNET_BiGru_Transf_SMOTE .py")
     
     scope = ['https://www.googleapis.com/auth/drive']
     service_account_json_key = 'my_key.json'
@@ -189,7 +215,7 @@ def createModel(epochs, batch_size, noRows):
     service = build('drive', 'v3', credentials=credentials)
     logging.info('Connected to Google Drive')
     
-    logger = logging.getLogger('RESNET_Conv1D_BiGru_SMOTE')
+    logger = logging.getLogger('RESNET_BiGru_Transf_SMOTE ')
        
     # Define dimensions
     nclasses = 3
@@ -217,18 +243,18 @@ def createModel(epochs, batch_size, noRows):
     
     # Reshape output before feeding it to the Bi-GRU layer
     reshaped_output = Reshape((-1, 256))(model.layers[-2].output)  # Adjust the shape according to your ResNet1D output
-    
-    # Present model summary
-    model.summary()
-    
-    # Add 1D Convolutional layer
-    conv_output = Conv1D(64, kernel_size=3, activation='relu', padding='same')(reshaped_output)
-    conv_output = MaxPooling1D(pool_size=2)(conv_output)
 
-    # Add Bi-GRU layer
-    gru_output = Bidirectional(GRU(64, return_sequences=False))(conv_output)
+    # Add Bi-GRU layer on top of the ResNet1D model
+    gru_output = Bidirectional(GRU(64, return_sequences=True))(reshaped_output)
 
-    diagnosis = Dense(nclasses, kernel_initializer='he_normal', activation='softmax', name='diagnosis')(gru_output)
+    # Add Transformer layer on top of the Bi-GRU output
+    transformer_layer = CustomTransformerLayer(num_heads=8, d_model=128, dff=512)  # Adjust d_model to match your GRU output dimension
+    transformer_output = transformer_layer(gru_output)
+
+    # Flatten the transformer output
+    transformer_output = Flatten()(transformer_output)
+
+    diagnosis = Dense(nclasses, kernel_initializer='he_normal', activation='softmax', name='diagnosis')(transformer_output)
 
     # Create the new model
     combined_model = Model(inputs=model.input, outputs=diagnosis)
@@ -263,7 +289,7 @@ def createModel(epochs, batch_size, noRows):
     # Save the model from time to time.
     # To load the model just run:
     # model = load_model('./backup_model.hdf5')
-    callbacks.append(ModelCheckpoint(filepath= 'model_RESNET_Conv1D_BiGru_SMOTE-' + str(epochs) + "-" + str(batch_size) + '.h5',
+    callbacks.append(ModelCheckpoint(filepath= 'model_RESNET_BiGru_Transf_SMOTE -' + str(epochs) + "-" + str(batch_size) + '.h5',
         save_weights_only=True,
         monitor='val_accuracy',
         mode='max',
@@ -292,7 +318,7 @@ def createModel(epochs, batch_size, noRows):
     history = combined_model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, callbacks=callbacks)
     logger.info('Model is trained')
     
-    filepath = "modelRESNET_Conv1D_BiGru_SMOTE-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
+    filepath = "modelRESNET_BiGru_Transf_SMOTE -" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
     
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
@@ -303,7 +329,7 @@ def createModel(epochs, batch_size, noRows):
     plt.savefig(filepath)
     driveUpload(service, filepath)
     
-    filepath = "modelRESNET_Conv1D_BiGru_SMOTE-" + str(epochs) + "-" + str(batch_size) + "-val_loss-" + str(max(history.history['val_loss'])) + ".png"
+    filepath = "modelRESNET_BiGru_Transf_SMOTE -" + str(epochs) + "-" + str(batch_size) + "-val_loss-" + str(max(history.history['val_loss'])) + ".png"
     
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -330,8 +356,8 @@ def createModel(epochs, batch_size, noRows):
                 s += "0"
         return(s)
     
-    filepath = "modelRESNET_Conv1D_BiGru_SMOTE." + inttostring(history.history['val_accuracy'].index(max(history.history['val_accuracy'])) + 1) + "-"
-    filepath = 'model_RESNET_Conv1D_BiGru_SMOTE-' + str(epochs) + "-" + str(batch_size) + '.h5'
+    filepath = "modelRESNET_BiGru_Transf_SMOTE ." + inttostring(history.history['val_accuracy'].index(max(history.history['val_accuracy'])) + 1) + "-"
+    filepath = 'model_RESNET_BiGru_Transf_SMOTE -' + str(epochs) + "-" + str(batch_size) + '.h5'
     combined_model.load_weights(filepath)
     driveUpload(service, filepath)
     
@@ -341,7 +367,7 @@ def createModel(epochs, batch_size, noRows):
         y_pred_new[i] = np.argmax(y_pred[i])
     
     
-    filepath = "modelRESNET_Conv1D_BiGru_SMOTE_confusion_matrix-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
+    filepath = "modelRESNET_BiGru_Transf_SMOTE _confusion_matrix-" + str(epochs) + "-" + str(batch_size) + "-val_accuracy-" + str(max(history.history['val_accuracy'])) + ".png"
     
     matrix = confusion_matrix(y_su, y_pred_new)
     
@@ -366,11 +392,11 @@ def main(argv):
     try:
        opts, args = getopt.getopt(argv,"e:, b:, n:",["ifile="])
     except getopt.GetoptError:
-       print('RESNET_Conv1D_BiGru_SMOTE.py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500)')
+       print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500)')
        sys.exit(2)
     for opt, arg in opts:
        if opt == '-h':
-          print('RESNET_Conv1D_BiGru_SMOTE.py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500, None for all rows)')
+          print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500, None for all rows)')
           sys.exit()
        elif opt in ("-e"):
           epochs = int(arg)       
