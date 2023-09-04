@@ -197,7 +197,7 @@ def driveUpload(service, filepath):
     fiahl = service.files().create(body=body, media_body=media).execute()
     logging.info("Created file '%s' id '%s'." % (fiahl.get('name'), fiahl.get('id')))
 
-def createModel(epochs, batch_size, noRows):
+def createModel(epochs, batch_size, noRows, GRU_units):
 
     logging.basicConfig(filename="logRESNET_BiGru_Transf_SMOTE ",
                         filemode='a',
@@ -245,10 +245,10 @@ def createModel(epochs, batch_size, noRows):
     reshaped_output = Reshape((-1, 256))(model.layers[-2].output)  # Adjust the shape according to your ResNet1D output
 
     # Add Bi-GRU layer on top of the ResNet1D model
-    gru_output = Bidirectional(GRU(64, return_sequences=True))(reshaped_output)
+    gru_output = Bidirectional(GRU(GRU_units, return_sequences=True))(reshaped_output)
 
     # Add Transformer layer on top of the Bi-GRU output
-    transformer_layer = CustomTransformerLayer(num_heads=8, d_model=128, dff=512)  # Adjust d_model to match your GRU output dimension
+    transformer_layer = CustomTransformerLayer(num_heads=8, d_model=2*GRU_units, dff=512)  # Adjust d_model to match your GRU output dimension
     transformer_output = transformer_layer(gru_output)
 
     # Flatten the transformer output
@@ -388,18 +388,21 @@ def main(argv):
     epochs = 2
     batch_size = 64
     noRows = 200
+    GRU_units = 256
     
     try:
-       opts, args = getopt.getopt(argv,"e:, b:, n:",["ifile="])
+       opts, args = getopt.getopt(argv,"e:, b:, n:, g:",["ifile="])
     except getopt.GetoptError:
-       print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500)')
+       print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500) -g <Number of GRU units>')
        sys.exit(2)
     for opt, arg in opts:
        if opt == '-h':
-          print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500, None for all rows)')
+          print('RESNET_BiGru_Transf_SMOTE .py -e <no epochs (default 3)> -b <batch size (default 64) > -n <number of rows to load from combined_data.csv> (default 500, None for all rows) -g <Number of GRU units>')
           sys.exit()
        elif opt in ("-e"):
           epochs = int(arg)       
+       elif opt in ("-g"):
+          GRU_units = int(arg)  
        elif opt in ("-b"):
           batch_size = int(arg)       
        elif opt in ("-n"):
@@ -407,7 +410,7 @@ def main(argv):
                noRows = None
            else:
                noRows = int(arg)                 
-    createModel(epochs, batch_size, noRows)
+    createModel(epochs, batch_size, noRows, GRU_units)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
